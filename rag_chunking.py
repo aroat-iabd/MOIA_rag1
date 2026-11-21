@@ -24,21 +24,55 @@ load_dotenv()  # Cargar las variables del archivo .env inmediatamente
 # ==========================================
 # 1. FUNCIONES: Selección de LLM y extracción de texto
 # ==========================================
-def get_llm(provider: Literal["gemini", "ollama"] = "gemini", model_name: str = "gemini-2.5-flash"):
+def get_llm(
+    provider: Literal["gemini", "ollama"] = "gemini",
+    model_name: str = "gemini-3.5-flash-lite",
+    base_url: str | None = None,
+    max_output_tokens: int = 1024,
+):
     """
-    Fábrica de LLM para intercambiar modelos rápidamente entre Gemini y Ollama local.
+    Fábrica de LLM compatible con:
+    - Gemini directo (en casa, con API key personal y base_url=None)
+    - Gemini por proxy (en clase, con token alu-... y GOOGLE_GEMINI_BASE_URL)
+    - Ollama local
     """
     if provider == "gemini":
-        return ChatGoogleGenerativeAI(model=model_name, api_key=os.getenv("GEMINI_API_KEY"))
+        # Acepta tanto GOOGLE_API_KEY como GEMINI_API_KEY
+        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("Falta GOOGLE_API_KEY o GEMINI_API_KEY en el archivo .env")
+
+        # Si base_url está vacío o es None, usa la API oficial de Google por defecto
+        kwargs = {
+            "model": model_name,
+            "api_key": api_key,
+            "temperature": 0,
+            "max_output_tokens": max_output_tokens,
+        }
+        if base_url:
+            kwargs["base_url"] = base_url
+
+        return ChatGoogleGenerativeAI(**kwargs)
+
     elif provider == "ollama":
         return ChatOllama(model=model_name, temperature=0.0)
     else:
         raise ValueError(f"Proveedor no soportado: {provider}")
 
-# Cambia 'LLM_PROVIDER' y 'LLM_MODEL' en el archivo .env para alternar entre Gemini y Ollama, y entre modelos.
-provider = os.getenv("LLM_PROVIDER", "gemini")
-default_model = "gemini-3.5-flash" if provider == "gemini" else "llama3.1"
-llm = get_llm(provider=provider, model_name=os.getenv("LLM_MODEL", default_model))
+
+provider = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
+default_model = "gemini-3.5-flash-lite" if provider == "gemini" else "llama3.1"
+model_name = os.getenv("LLM_MODEL", default_model).strip()
+
+# Si no está definida o está comentada en el .env, queda en None (modo casa)
+base_url = os.getenv("GOOGLE_GEMINI_BASE_URL", "").strip() or None
+
+llm = get_llm(
+    provider=provider,
+    model_name=model_name,
+    base_url=base_url,
+    max_output_tokens=1024,
+)
 
 
 def extraer_texto(content) -> str:
@@ -50,7 +84,6 @@ def extraer_texto(content) -> str:
         for bloque in content
         if isinstance(bloque, dict) and bloque.get("type") == "text"
     )
-
 
 # ==========================================
 # 2. CARGA Y CHUNKING DE DOCUMENTOS
