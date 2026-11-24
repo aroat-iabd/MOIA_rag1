@@ -37,10 +37,10 @@ def get_llm(
     - Ollama local
     """
     if provider == "gemini":
-        # Acepta tanto GOOGLE_API_KEY como GEMINI_API_KEY
-        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+        # Acepta tanto GOOGLE_API_KEY
+        api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            raise ValueError("Falta GOOGLE_API_KEY o GEMINI_API_KEY en el archivo .env")
+            raise ValueError("Falta GOOGLE_API_KEY en el archivo .env")
 
         # Si base_url está vacío o es None, usa la API oficial de Google por defecto
         kwargs = {
@@ -148,7 +148,7 @@ def load_file(path: Path) -> List[Document]:
 
 
 # Una vez cargados los documentos, se dividen en chunks para RAG. Se puede ajustar el tamaño y solapamiento de los chunks.
-def chunkenizar(docs_dir: Path = DOCS_DIR, chunk_size: int = 900, chunk_overlap: int = 150) -> List[Document]:
+def chunkenizar(docs_dir: Path = DOCS_DIR, chunk_size: int = 600, chunk_overlap: int = 100) -> List[Document]:
     if chunk_overlap >= chunk_size:
         raise ValueError("chunk_overlap debe ser menor que chunk_size")
 
@@ -215,7 +215,7 @@ def preparar_documentos(docs_dir: Path = DOCS_DIR) -> None:
 
 def main() -> None:
     preparar_documentos(DOCS_DIR)
-    chunks = chunkenizar(DOCS_DIR, chunk_size=900, chunk_overlap=150)
+    chunks = chunkenizar(DOCS_DIR, chunk_size=600, chunk_overlap=100)
     textos = [c.page_content for c in chunks]
 
     for c in chunks[:5]:

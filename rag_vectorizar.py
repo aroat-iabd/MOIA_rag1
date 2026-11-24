@@ -10,7 +10,7 @@ DOCS_DIR = BASE_DIR / "docs"
 
 # Se obtienen los chunks desde rag_chunking.py y se convierten en textos vectorizables.
 preparar_documentos(DOCS_DIR)
-chunks = chunkenizar(DOCS_DIR, chunk_size=900, chunk_overlap=150)
+chunks = chunkenizar(DOCS_DIR, chunk_size=600, chunk_overlap=100)
 textos = [chunk.page_content for chunk in chunks]
 
 if not chunks:
